@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+TOOLCHAIN_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cmake -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_DIR/clang-windows-i686.cmake" "$@"
