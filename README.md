@@ -1,6 +1,6 @@
-# KLINIKAL
-WINSOCK2 TO WIREGUARD PROXY DLL
----
+<img alt="KLINIKAL" src="https://github.com/user-attachments/assets/e3ba2832-ba1b-4c27-95b3-938527d11345" />
+
+#
 KLINIKAL is a Go-based userspace Winsock2 DLL drop-in replacement that transparently tunnels all Windows socket API calls through a WireGuard VPN using an in-process network stack. It cross-compiles from Linux to a Windows DLL via cgo and MinGW, exporting 100+ functions with byte-compatible C signatures matching winsock2.h and ws2tcpip.h. Any Windows application that loads this DLL instead of the system ws2_32.dll will have its entire network I/O silently routed through the configured WireGuard tunnel — without drivers, adapters, or elevated privileges.
 
 ## BUILDING
