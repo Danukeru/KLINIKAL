@@ -1,0 +1,75 @@
+name: Release Windows demo
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+# A release is created only for a pushed version tag.  The manual trigger is
+# useful for verifying the same release build without publishing anything.
+permissions:
+  contents: write
+
+concurrency:
+  group: release-demo-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Windows x64 demo
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out the selected revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Build and export the Windows executable
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: demo/Dockerfile
+          target: artifact
+          outputs: type=local,dest=release
+          # Retains reusable Docker layers, including the completed toolchain
+          # stage, across GitHub-hosted runners. BuildKit invalidates layers
+          # when their Dockerfile inputs change.
+          cache-from: type=gha,scope=klinikal-demo-clang22
+          cache-to: type=gha,mode=max,scope=klinikal-demo-clang22
+
+      - name: Name and checksum the release asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME}"
+          else
+            version="manual-${GITHUB_SHA}"
+          fi
+          asset="KLINIKAL-${version}-windows-x64.exe"
+          mv release/demo.exe "release/${asset}"
+          (
+            cd release
+            sha256sum "${asset}" > SHA256SUMS.txt
+          )
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: KLINIKAL-${{ github.ref_name }}-windows-x64
+          path: release/
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            release/*.exe
+            release/SHA256SUMS.txt
