@@ -4,7 +4,11 @@
 KLINIKAL is a Go-based userspace Winsock2 DLL drop-in replacement that transparently tunnels all Windows socket API calls through a WireGuard VPN using an in-process network stack. It cross-compiles from Linux to a Windows DLL via cgo and MinGW, exporting 100+ functions with byte-compatible C signatures matching winsock2.h and ws2tcpip.h. Any Windows application that loads this DLL instead of the system ws2_32.dll will have its entire network I/O silently routed through the configured WireGuard tunnel — without drivers, adapters, or elevated privileges.
 
 ## BUILDING
-See the [Dockerfile](Dockerfile)
+
+`Dockerfile` builds the Windows x86 KLINIKAL DLL and the Linux/Windows demo
+server components. `demo/Dockerfile` builds the Windows x86 demo executable
+with Clang 22. The release workflow combines their outputs into a ZIP with the
+same `klinikal/` directory layout as release `0.0.1`.
 
 ## USAGE
 

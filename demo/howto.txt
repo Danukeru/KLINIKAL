@@ -1,0 +1,7 @@
+# How to Run The Demo
+
+- Set up a WireGuard server with routing to the demo server and DNS.
+- Replace the placeholder values in `wg.conf` with the client configuration.
+- Run `demo-srv` somewhere reachable through that WireGuard peer.
+- Keep `demo.exe`, `wsx_32.dll`, and `wg.conf` in the same directory, then run
+  `demo.exe <demo-srv-ip>`.

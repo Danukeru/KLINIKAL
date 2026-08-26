@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/var/cache/vsdownload \
     && python3 /tmp/vsdownload.py --accept-license \
          --dest /opt/wdk --cache /var/cache/vsdownload \
          --msvc-version 17.14 --sdk-version 10.0.26100 --skip-recommended \
-         --architecture x64 --host-arch x64 \
+         --architecture x86 --host-arch x64 \
     && ln -sfn "/opt/wdk/Windows Kits" /opt/wdk/WindowsKits \
     && python3 /usr/local/bin/prepare_windows_sdk_aliases.py \
          /opt/wdk/VC/Tools/MSVC/*/include \
@@ -46,14 +46,14 @@ RUN python3 demo/tools/prepare_windows_sdk_aliases.py \
          /opt/wdk/WindowsKits/10/Lib/*/ucrt \
          /opt/wdk/WindowsKits/10/Lib/*/um \
     && python3 demo/tools/audit_case_sensitivity.py /src/KLINIKAL/demo \
-    && cmake -G Ninja -S demo -B build-windows-clang22 \
-         -DCMAKE_BUILD_TYPE=Release \
-         -DCMAKE_TOOLCHAIN_FILE=/src/KLINIKAL/demo/cmake/clang22-windows-x64.cmake \
-    && cmake --build build-windows-clang22 --parallel \
-    && cmake --build build-windows-clang22 --target case-audit \
-    && test -f build-windows-clang22/demo.exe \
-    && llvm-readobj-22 --file-headers build-windows-clang22/demo.exe \
-       | grep -q 'COFF-x86-64'
+    && cmake -G Ninja -S demo -B build-windows-clang22-x86 \
+        -DCMAKE_BUILD_TYPE=Release \
+         -DCMAKE_TOOLCHAIN_FILE=/src/KLINIKAL/demo/cmake/clang22-windows-x86.cmake \
+    && cmake --build build-windows-clang22-x86 --parallel \
+    && cmake --build build-windows-clang22-x86 --target case-audit \
+    && test -f build-windows-clang22-x86/demo.exe \
+    && llvm-readobj-22 --file-headers build-windows-clang22-x86/demo.exe \
+       | grep -q 'COFF-i386'
 
 FROM scratch AS artifact
-COPY --from=windows-cross /src/KLINIKAL/build-windows-clang22/demo.exe /demo.exe
+COPY --from=windows-cross /src/KLINIKAL/build-windows-clang22-x86/demo.exe /demo.exe

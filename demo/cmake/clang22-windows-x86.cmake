@@ -1,8 +1,8 @@
-# Cross-compile KLINIKAL's Windows x64 demo from Linux with LLVM/Clang 22.
+# Cross-compile KLINIKAL's Windows x86 demo from Linux with LLVM/Clang 22.
 set(CMAKE_SYSTEM_NAME Windows)
-set(CMAKE_SYSTEM_PROCESSOR AMD64)
-set(CMAKE_C_COMPILER_TARGET x86_64-pc-windows-msvc)
-set(CMAKE_CXX_COMPILER_TARGET x86_64-pc-windows-msvc)
+set(CMAKE_SYSTEM_PROCESSOR x86)
+set(CMAKE_C_COMPILER_TARGET i686-pc-windows-msvc)
+set(CMAKE_CXX_COMPILER_TARGET i686-pc-windows-msvc)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 set(CLANG_BIN_DIR /usr/bin CACHE PATH "LLVM binary directory")
@@ -25,8 +25,8 @@ list(GET WINSDK_LIB_DIRS 0 WINSDK_LIB)
 
 if(NOT IS_DIRECTORY "${MSVC_BASE}/include" OR
    NOT IS_DIRECTORY "${WINSDK_INCLUDE}/um" OR
-   NOT IS_DIRECTORY "${WINSDK_LIB}/um/x64")
-    message(FATAL_ERROR "vsdownload.py did not produce an MSVC x64 + Windows SDK layout")
+   NOT IS_DIRECTORY "${WINSDK_LIB}/um/x86")
+    message(FATAL_ERROR "vsdownload.py did not produce an MSVC x86 + Windows SDK layout")
 endif()
 
 set(WINDOWS_INCLUDE_FLAGS
@@ -40,9 +40,9 @@ set(CMAKE_C_FLAGS_INIT "${WINDOWS_INCLUDE_FLAGS}" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS_INIT "${WINDOWS_INCLUDE_FLAGS}" CACHE STRING "" FORCE)
 
 set(WINDOWS_LINK_FLAGS
-    "/libpath:${MSVC_BASE}/lib/x64"
-    "/libpath:${WINSDK_LIB}/ucrt/x64"
-    "/libpath:${WINSDK_LIB}/um/x64")
+    "/libpath:${MSVC_BASE}/lib/x86"
+    "/libpath:${WINSDK_LIB}/ucrt/x86"
+    "/libpath:${WINSDK_LIB}/um/x86")
 string(REPLACE ";" " " WINDOWS_LINK_FLAGS "${WINDOWS_LINK_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS_INIT "${WINDOWS_LINK_FLAGS}" CACHE STRING "" FORCE)
 set(CMAKE_SHARED_LINKER_FLAGS_INIT "${WINDOWS_LINK_FLAGS}" CACHE STRING "" FORCE)

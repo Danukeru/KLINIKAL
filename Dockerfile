@@ -1,23 +1,40 @@
-# Run with: $ docker build -o . .
-# Should output a tarball to the directory.
-FROM ubuntu:24.04 AS builder
+# syntax=docker/dockerfile:1.7
+# Builds the KLINIKAL runtime components. The 32-bit demo is built separately by
+# demo/Dockerfile because it uses the pinned LLVM 22 MSVC-compatible toolchain.
+FROM golang:1.25.5-bookworm AS dll-builder
 
-WORKDIR /build
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc-mingw-w64-i686 \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt update && \
-    apt install -y --no-install-recommends build-essential wget curl git apt-transport-https lsb-release software-properties-common gnupg \
-    gcc-mingw-w64-i686
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
 
-RUN wget https://gist.githubusercontent.com/Danukeru/ddad77d1c16ef894f0a2684c3fb1100f/raw/335d4d935db51f47a9086fd8d005342bf76de3aa/go-updater.sh && \
-    chmod +x go-updater.sh && ./go-updater.sh
+# The historical demo is 32-bit, so its manually mapped Winsock replacement
+# must be i686 too. The historical release name is retained for its loader.
+RUN GOOS=windows GOARCH=386 CGO_ENABLED=1 \
+      CC=i686-w64-mingw32-gcc \
+      CGO_CFLAGS=-static \
+    go build -buildmode=c-shared \
+      -ldflags='-s -w -extldflags=-Wl,/src/ws2_32.def' \
+      -o /out/wsx_32.dll
 
-ENV PATH=/usr/local/go/bin:$PATH
+FROM golang:1.25.5-bookworm AS demo-server-builder
 
-RUN git clone https://github.com/Danukeru/KLINIKAL klinikal && \
-    cd klinikal && \
-    make
+WORKDIR /src/demo/server
+COPY demo/server/demo-server.go ./
+RUN GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' \
+      -o /out/demo-srv ./demo-server.go \
+    && GOOS=windows GOARCH=386 go build -trimpath -ldflags='-s -w' \
+      -o /out/demo-srv.exe ./demo-server.go
 
-RUN tar zcvf klinikal.tar.gz klinikal
-
-FROM scratch
-COPY --from=builder /build/klinikal.tar.gz /
+# This stage deliberately does not include demo.exe. The release workflow
+# combines this directory with the output of demo/Dockerfile, then creates ZIP.
+FROM scratch AS artifact
+COPY --from=dll-builder /out/wsx_32.dll /klinikal/wsx_32.dll
+COPY --from=demo-server-builder /out/demo-srv /klinikal/demo-srv
+COPY --from=demo-server-builder /out/demo-srv.exe /klinikal/demo-srv.exe
+COPY demo/howto.txt /klinikal/howto.txt
+COPY wg.conf /klinikal/wg.conf
