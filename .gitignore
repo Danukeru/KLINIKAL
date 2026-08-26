@@ -5,3 +5,5 @@ ws2_32.h
 
 demo/bin/
 demo/build/
+demo/out/
+demo/tools/__pycache__/
