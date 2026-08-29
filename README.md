@@ -8,7 +8,7 @@ KLINIKAL is a Go-based userspace Winsock2 DLL drop-in replacement that transpare
 `Dockerfile` builds the Windows x86 KLINIKAL DLL and the Linux/Windows demo
 server components. `demo/Dockerfile` builds the Windows x86 demo executable
 with Clang 22. The release workflow combines their outputs into a ZIP with the
-same `klinikal/` directory layout as release `0.0.1`.
+same `klinikal/` directory layout as release `1.0.0`.
 
 ## USAGE
 
