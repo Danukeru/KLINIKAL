@@ -173,27 +173,6 @@ epoll_wait at 1.001-1.002s, and a 2s idle epoll wait costs ~1.4ms CPU
   getpeername on EINVAL); the connect-wait uses ppoll, which is
   interposed; C-level fd_set bitmaps require fds < 1024.
 
-## Upstream Go bugs fixed in the vendored stack
-
-(latent in KLINIKAL's Windows build too)
-
-- checkReadReady returned false for all dialed (net.Conn-backed)
-  sockets, so select() never reported readability. Fixed with a
-  deadline-probe that parks the probed byte in the MSG_PEEK buffer.
-- Non-blocking send/recv used a 1ns deadline; gVisor errors on an
-  expired deadline even when data/buffer space is available, so every
-  non-blocking send failed. Fixed with small grace windows (1ms read,
-  50ms write, 50ms probe).
-- io.EOF was mapped to an error; recv on a closed peer must return
-  0. Fixed in Recv/Recvfrom.
-- mapError matched "connection refused" but gVisor says "connection
-  was refused", so refused connects surfaced as EIO.
-- NotifyEvent gated event accumulation with `fired &= NetworkEvents`
-  (zero unless WSAEventSelect was called); the eventfd bridge signal
-  now fires on any readiness change. (The WSAEventSelect machinery
-  itself has since been removed — nothing in the POSIX surface uses
-  it.)
-
 ## Port gotchas found the hard way
 
 - glibc struct addrinfo has ai_addr at offset 24 (4-byte socklen_t,
