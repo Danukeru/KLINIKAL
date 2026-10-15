@@ -76,7 +76,8 @@ func mapError(err error) int32 {
 	case errors.Is(err, net.ErrClosed):
 		return WSAENOTSOCK
 
-	case strings.Contains(errStr, "connection refused"):
+	case strings.Contains(errStr, "connection refused"),
+		strings.Contains(errStr, "connection was refused"):
 		return WSAECONNREFUSED
 
 	case strings.Contains(errStr, "connection reset"):
