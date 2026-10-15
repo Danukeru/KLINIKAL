@@ -9,6 +9,9 @@
 package winsock
 
 import (
+	"errors"
+	"io"
+	"net"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -83,7 +86,31 @@ func checkReadReady(st *SocketState) bool {
 	if st.Listener != nil {
 		return true
 	}
-	return false
+	if st.Conn == nil {
+		return false
+	}
+	// Dialed sockets are backed by a net.Conn with no exposed endpoint, so
+	// there is no Readiness to consult: probing false here made select and
+	// WSAPoll never report readability for connected sockets. Probe with a
+	// short-deadline 1-byte read instead and park the probed byte in the
+	// peek buffer so the next recv serves it. The deadline must be a grace
+	// window, not 1ns (gVisor checks deadlines before data).
+	st.Conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
+	buf := make([]byte, 1)
+	n, err := st.Conn.Read(buf)
+	st.Conn.SetReadDeadline(time.Time{})
+	if n > 0 {
+		st.PeekBuf = append(st.PeekBuf, buf[:n]...)
+		return true
+	}
+	if err == nil || errors.Is(err, io.EOF) {
+		// EOF is readable: recv must be able to observe the closed peer.
+		return true
+	}
+	if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+		return false
+	}
+	return true // any other error is a readable error state for recv
 }
 
 // checkWriteReady checks if a socket can accept data for writing.
