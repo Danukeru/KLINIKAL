@@ -70,7 +70,11 @@ func GoSend(s uint64, buf unsafe.Pointer, len int32, flags int32) int32 {
 	data := unsafe.Slice((*byte)(buf), int(len))
 
 	if st.IsNonBlocking {
-		st.Conn.SetWriteDeadline(time.Now().Add(time.Nanosecond))
+		// gVisor checks deadlines BEFORE data: a 1ns deadline fails even
+		// when the write would succeed. A small grace window means the
+		// deadline only fires when the stack genuinely cannot accept
+		// data right now (which is exactly what WSAEWOULDBLOCK means).
+		st.Conn.SetWriteDeadline(time.Now().Add(50 * time.Millisecond))
 	} else {
 		st.Conn.SetWriteDeadline(time.Time{})
 	}
@@ -128,7 +132,9 @@ func GoRecv(s uint64, buf unsafe.Pointer, len int32, flags int32) int32 {
 	}
 
 	if st.IsNonBlocking {
-		st.Conn.SetReadDeadline(time.Now().Add(time.Nanosecond))
+		// See send: gVisor checks deadlines before data, so non-blocking
+		// reads need a small grace window, not 1ns.
+		st.Conn.SetReadDeadline(time.Now().Add(time.Millisecond))
 	} else {
 		st.Conn.SetReadDeadline(time.Time{})
 	}
@@ -272,7 +278,11 @@ func GoSendto(s uint64, buf unsafe.Pointer, len int32, flags int32, to unsafe.Po
 	}
 
 	if st.IsNonBlocking {
-		st.Conn.SetWriteDeadline(time.Now().Add(time.Nanosecond))
+		// gVisor checks deadlines BEFORE data: a 1ns deadline fails even
+		// when the write would succeed. A small grace window means the
+		// deadline only fires when the stack genuinely cannot accept
+		// data right now (which is exactly what WSAEWOULDBLOCK means).
+		st.Conn.SetWriteDeadline(time.Now().Add(50 * time.Millisecond))
 	} else {
 		st.Conn.SetWriteDeadline(time.Time{})
 	}
@@ -326,7 +336,9 @@ func GoRecvfrom(s uint64, buf unsafe.Pointer, len int32, flags int32, from unsaf
 	data := unsafe.Slice((*byte)(buf), int(len))
 
 	if st.IsNonBlocking {
-		st.Conn.SetReadDeadline(time.Now().Add(time.Nanosecond))
+		// See send: gVisor checks deadlines before data, so non-blocking
+		// reads need a small grace window, not 1ns.
+		st.Conn.SetReadDeadline(time.Now().Add(time.Millisecond))
 	} else {
 		st.Conn.SetReadDeadline(time.Time{})
 	}
