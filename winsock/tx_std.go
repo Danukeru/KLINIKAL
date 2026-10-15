@@ -6,6 +6,8 @@
 package winsock
 
 import (
+	"errors"
+	"io"
 	"net"
 	"net/netip"
 	"time"
@@ -161,6 +163,11 @@ func GoRecv(s uint64, buf unsafe.Pointer, len int32, flags int32) int32 {
 	}
 
 	if err != nil && n == 0 {
+		// A gracefully closed peer must report EOF as a zero-length
+		// recv (winsock semantics), not an error.
+		if errors.Is(err, io.EOF) {
+			return 0
+		}
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() && st.IsNonBlocking {
 			setLastError(WSAEWOULDBLOCK)
 		} else {
@@ -359,6 +366,10 @@ func GoRecvfrom(s uint64, buf unsafe.Pointer, len int32, flags int32, from unsaf
 	}
 
 	if err != nil {
+		// Graceful close is a zero-length receive, not an error.
+		if errors.Is(err, io.EOF) && n == 0 {
+			return 0
+		}
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() && st.IsNonBlocking {
 			setLastError(WSAEWOULDBLOCK)
 		} else {
