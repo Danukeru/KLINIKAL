@@ -1,0 +1,8 @@
+libklinikal.so
+libklinikal.h
+wg.conf
+.server.priv
+.client.pub
+.server.pub
+*~
+__pycache__/
